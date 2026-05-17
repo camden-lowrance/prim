@@ -1,0 +1,34 @@
+{
+  "name": "prim",
+  "version": "0.1.0",
+  "description": "Machine-native coordination primitives for agentic software work.",
+  "type": "module",
+  "private": true,
+  "main": "packages/server/src/index.ts",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "demo": "tsx examples/demo.ts",
+    "server": "tsx packages/server/src/index.ts",
+    "mcp": "tsx packages/mcp/src/server.ts"
+  },
+  "keywords": [
+    "agents",
+    "coordination",
+    "ledger",
+    "mcp"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@hono/node-server": "^2.0.2",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "hono": "^4.12.19",
+    "nanoid": "^5.1.11",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.8.0",
+    "tsx": "^4.22.1",
+    "typescript": "^6.0.3"
+  }
+}
