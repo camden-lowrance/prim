@@ -1,13 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { resolve } from "node:path";
 import { z } from "zod";
 import { invokePrim } from "../../core/src/invoke";
 import { JsonlLedgerBackend } from "../../core/src/ledger-jsonl";
+import { resolveRuntimeLedgerPath } from "../../core/src/project-config";
 import { actorSchema, externalRefSchema, subjectSchema } from "../../core/src/schema";
 import type { PrimOp } from "../../core/src/types";
 
-const ledgerPath = process.env.PRIM_LEDGER_PATH ?? resolve(process.cwd(), "data/prim-events.jsonl");
+const ledgerPath = await resolveRuntimeLedgerPath();
 const ledger = new JsonlLedgerBackend(ledgerPath);
 
 const server = new McpServer({
@@ -223,4 +223,3 @@ server.registerTool(
 );
 
 await server.connect(new StdioServerTransport());
-

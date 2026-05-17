@@ -79,6 +79,39 @@ npm run mcp
 
 Runtime JSONL files are written under `data/` and ignored by git.
 
+## Project Namespaces
+
+Prim is managed as a sidecar control layer. Target repositories keep their own
+code truth. Prim stores coordination truth under `data/projects/<project>/`.
+
+Initialize a target repo namespace:
+
+```bash
+npm exec -- prim project init --repo C:\Users\camde\Documents\GitHub\rei-miner --github vvvanguards/rei-miner
+```
+
+That writes:
+
+```text
+data/projects/rei-miner/project.json
+data/projects/rei-miner/events.jsonl
+```
+
+Install the minimal target-repo manifest:
+
+```bash
+npm exec -- prim project install --repo C:\Users\camde\Documents\GitHub\rei-miner --github vvvanguards/rei-miner
+```
+
+That also writes `rei-miner/.prim.json`. It does not vendor Prim code into the target repo.
+
+Run the HTTP or MCP servers against that namespace:
+
+```bash
+$env:PRIM_PROJECT = "rei-miner"
+npm run server
+```
+
 ## Position
 
 Prim should integrate with Beads for durable agent memory, with Temporal for long-running effects, and with GitHub/Jira/Linear as projections.

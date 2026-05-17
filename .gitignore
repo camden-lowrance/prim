@@ -1,5 +1,5 @@
 node_modules/
 data/*.jsonl
+data/projects/*/events.jsonl
 dist/
 .env
-

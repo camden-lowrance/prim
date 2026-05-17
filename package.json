@@ -5,8 +5,12 @@
   "type": "module",
   "private": true,
   "main": "packages/server/src/index.ts",
+  "bin": {
+    "prim": "packages/cli/bin/prim.mjs"
+  },
   "scripts": {
     "check": "tsc --noEmit",
+    "prim": "tsx packages/cli/src/index.ts",
     "demo": "tsx examples/demo.ts",
     "server": "tsx packages/server/src/index.ts",
     "mcp": "tsx packages/mcp/src/server.ts"

@@ -1,11 +1,11 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { resolve } from "node:path";
 import { JsonlLedgerBackend } from "../../core/src/ledger-jsonl";
 import { invokePrim } from "../../core/src/invoke";
+import { resolveRuntimeLedgerPath } from "../../core/src/project-config";
 
 const app = new Hono();
-const ledgerPath = process.env.PRIM_LEDGER_PATH ?? resolve(process.cwd(), "data/prim-events.jsonl");
+const ledgerPath = await resolveRuntimeLedgerPath();
 const ledger = new JsonlLedgerBackend(ledgerPath);
 
 app.get("/health", (context) =>
@@ -37,4 +37,3 @@ serve({ fetch: app.fetch, port }, (info) => {
   console.log(`Prim API listening on http://localhost:${info.port}`);
   console.log(`Ledger path: ${ledgerPath}`);
 });
-

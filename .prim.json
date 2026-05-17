@@ -1,0 +1,9 @@
+{
+  "project": "prim",
+  "repo_path": "C:\\Users\\camde\\Documents\\GitHub\\prim",
+  "github_repo": "camden-lowrance/prim",
+  "ledger": "data/projects/prim/events.jsonl",
+  "schema_version": "0.1.0",
+  "prim_root": "C:\\Users\\camde\\Documents\\GitHub\\prim",
+  "managed": true
+}
