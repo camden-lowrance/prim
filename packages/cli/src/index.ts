@@ -22,11 +22,14 @@ interface ProjectInitArgs {
 }
 
 async function main(argv: string[]): Promise<void> {
-  const [group, command, ...rest] = argv;
+  const scoped = isLedgerArgv(argv)
+    ? parseLedgerSelection(argv)
+    : { argv, selection: {} };
+  const [group, command, ...rest] = scoped.argv;
 
   if (isPrimitiveOp(group)) {
     const request = parsePrimitiveArgs(group, command, rest);
-    const ledgerPath = await resolveRuntimeLedgerPath();
+    const ledgerPath = await resolveCliLedgerPath(scoped.selection);
     const ledger = new JsonlLedgerBackend(ledgerPath);
     const result = await invokePrim(request, ledger);
 
@@ -49,7 +52,7 @@ async function main(argv: string[]): Promise<void> {
 
   if (group === "subject") {
     const subject = parseSubjectArgs(command, rest);
-    const ledgerPath = await resolveRuntimeLedgerPath();
+    const ledgerPath = await resolveCliLedgerPath(scoped.selection);
     const ledger = new JsonlLedgerBackend(ledgerPath);
     const events = await ledger.listEvents(subject);
     writeJson({
@@ -64,7 +67,7 @@ async function main(argv: string[]): Promise<void> {
     if (args.length > 0) {
       throw new Error(`unknown argument: ${args[0]}`);
     }
-    const ledgerPath = await resolveRuntimeLedgerPath();
+    const ledgerPath = await resolveCliLedgerPath(scoped.selection);
     const ledger = new JsonlLedgerBackend(ledgerPath);
     const events = await ledger.query({});
     writeJson({
@@ -77,7 +80,7 @@ async function main(argv: string[]): Promise<void> {
   if (group === "report") {
     const flags = parseFlags(compactArgs([command, ...rest]), ["since"]);
     const since = parseSince(flags.since ?? "today");
-    const ledgerPath = await resolveRuntimeLedgerPath();
+    const ledgerPath = await resolveCliLedgerPath(scoped.selection);
     const ledger = new JsonlLedgerBackend(ledgerPath);
     const events = await ledger.query({});
     writeJson({
@@ -138,6 +141,52 @@ async function main(argv: string[]): Promise<void> {
 
 function writeJson(value: unknown): void {
   console.log(JSON.stringify(value, null, 2));
+}
+
+interface LedgerSelection {
+  project?: string;
+  repoPath?: string;
+}
+
+function parseLedgerSelection(argv: string[]): {
+  argv: string[];
+  selection: LedgerSelection;
+} {
+  const selection: LedgerSelection = {};
+  const rest: string[] = [];
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === "--project") {
+      selection.project = readValue(argv, (index += 1), arg);
+    } else if (arg === "--repo") {
+      selection.repoPath = readValue(argv, (index += 1), arg);
+    } else {
+      rest.push(arg);
+    }
+  }
+
+  if (selection.project && selection.repoPath) {
+    throw new Error("--project and --repo cannot be used together");
+  }
+
+  return { argv: rest, selection };
+}
+
+async function resolveCliLedgerPath(selection: LedgerSelection): Promise<string> {
+  try {
+    return await resolveRuntimeLedgerPath(process.cwd(), process.env, selection);
+  } catch (error) {
+    const target = selection.project
+      ? `--project ${selection.project}`
+      : selection.repoPath
+        ? `--repo ${selection.repoPath}`
+        : "current context";
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `failed to resolve ledger for ${target} from ${process.cwd()}: ${message}`
+    );
+  }
 }
 
 function parseSubjectArgs(
@@ -452,6 +501,7 @@ function projectUsage(): string {
 usage: prim subject <subject-type> <subject-id>
 usage: prim status
 usage: prim report --since <date-or-today>
+ledger commands accept --project <name> or --repo <path>
 usage: prim project <init|install> --repo <path> --github <owner/repo>`;
 }
 
@@ -473,6 +523,22 @@ function primitiveUsage(): string {
 
 function isPrimitiveOp(value: string | undefined): value is PrimOp {
   return Boolean(value && PRIM_OPS.includes(value as PrimOp));
+}
+
+function isLedgerCommand(value: string | undefined): boolean {
+  return isPrimitiveOp(value) || value === "subject" || value === "status" || value === "report";
+}
+
+function isLedgerArgv(argv: string[]): boolean {
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === "--project" || arg === "--repo") {
+      index += 1;
+      continue;
+    }
+    return isLedgerCommand(arg);
+  }
+  return false;
 }
 
 main(process.argv.slice(2)).catch((error) => {
