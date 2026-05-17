@@ -2,6 +2,7 @@ export const PRIM_SCHEMA_VERSION = "0.1.0";
 
 export const PRIM_OPS = [
   "observe",
+  "issue",
   "record",
   "ask",
   "decide",
@@ -105,9 +106,19 @@ export interface HandoffItem {
   summary: string;
 }
 
+export interface IssueItem {
+  id: string;
+  ts: string;
+  actor: ActorRef;
+  title: string;
+  body: string;
+  priority?: string;
+}
+
 export interface SubjectState {
   subject: SubjectRef;
   status: SubjectStatus;
+  issue?: IssueItem;
   claims: ClaimItem[];
   open_questions: OpenQuestion[];
   decisions: DecisionItem[];

@@ -22,6 +22,7 @@ Prim exposes a small primitive vocabulary:
 
 ```text
 observe
+issue
 record
 ask
 decide

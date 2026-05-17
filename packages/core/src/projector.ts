@@ -3,6 +3,7 @@ import type {
   DecisionItem,
   ExternalRef,
   HandoffItem,
+  IssueItem,
   OpenQuestion,
   PrimEvent,
   PrimOp,
@@ -28,10 +29,25 @@ export function projectSubjectState(
   const claims = new Map<string, ClaimItem>();
   const links = new Map<string, ExternalRef>();
   const handoffs: HandoffItem[] = [];
+  let issue: IssueItem | undefined;
   let completed = false;
 
   for (const event of sorted) {
     switch (event.op) {
+      case "issue":
+        issue = {
+          id: event.id,
+          ts: event.ts,
+          actor: event.actor,
+          title: String(event.input.title),
+          body: String(event.input.body),
+          priority:
+            typeof event.input.priority === "string"
+              ? event.input.priority
+              : undefined
+        };
+        break;
+
       case "record":
         records.push({
           id: event.id,
@@ -131,6 +147,7 @@ export function projectSubjectState(
   const state: SubjectState = {
     subject,
     status,
+    issue,
     claims: claimValues,
     open_questions: openQuestionValues,
     decisions,

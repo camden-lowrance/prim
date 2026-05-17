@@ -54,6 +54,31 @@ server.registerTool(
 );
 
 server.registerTool(
+  "prim_issue",
+  {
+    description: "Document a new work item in the Prim ledger.",
+    inputSchema: z.object({
+      ...baseShape,
+      title: z.string().min(1),
+      body: z.string().min(1),
+      priority: z.string().min(1).optional()
+    })
+  },
+  async ({ actor, subject, title, body, priority }) =>
+    jsonResult(
+      await invokePrim(
+        {
+          op: "issue",
+          actor: actor ?? defaultActor("issue"),
+          subject,
+          input: { title, body, priority }
+        },
+        ledger
+      )
+    )
+);
+
+server.registerTool(
   "prim_record",
   {
     description: "Append a structured fact, finding, claim, note, risk, or evidence item.",
