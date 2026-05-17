@@ -245,11 +245,15 @@ usage: prim project <init|install> --repo <path> --github <owner/repo>`;
 
 function primitiveUsage(): string {
   return [
-    "usage: prim observe issue <id>",
-    "usage: prim claim issue <id> --scope <scope>",
-    "usage: prim record issue <id> --kind <kind> --body <body>",
-    "usage: prim link issue <id> --type <type> (--id <id> | --url <url>)",
-    "usage: prim complete issue <id> --summary <summary>"
+    "usage: prim observe <subject-type> <subject-id>",
+    "usage: prim claim <subject-type> <subject-id> --scope <scope>",
+    "usage: prim record <subject-type> <subject-id> --kind <kind> --body <body>",
+    "usage: prim link <subject-type> <subject-id> --type <type> (--id <id> | --url <url>)",
+    "usage: prim complete <subject-type> <subject-id> --summary <summary>",
+    "",
+    "examples:",
+    "  prim observe issue 123",
+    "  prim claim repo_policy prim_dogfood/background-worker --scope implementation"
   ].join("\n");
 }
 
