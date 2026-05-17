@@ -31,6 +31,11 @@ const baseInvokeSchema = z.object({
 
 const inputSchemas = {
   observe: z.object({}).passthrough(),
+  issue: z.object({
+    title: z.string().min(1),
+    body: z.string().min(1),
+    priority: z.string().min(1).optional()
+  }),
   record: z.object({
     kind: z.string().min(1),
     body: z.string().min(1),

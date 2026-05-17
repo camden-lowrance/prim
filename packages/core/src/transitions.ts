@@ -29,6 +29,13 @@ export function validateTransition(
     return { accepted: true, warnings };
   }
 
+  if (request.op === "issue") {
+    if (state.issue) {
+      warnings.push("issue metadata already exists");
+    }
+    return { accepted: true, warnings };
+  }
+
   if (request.op === "claim") {
     const scope = String(request.input.scope);
     const existing = state.claims.find((claim) => claim.scope === scope);

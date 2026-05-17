@@ -124,6 +124,15 @@ function parsePrimitiveInput(op: PrimOp, argv: string[]): Record<string, unknown
     return { scope: requireFlag(flags, "scope") };
   }
 
+  if (op === "issue") {
+    const flags = parseFlags(argv, ["title", "body", "priority"], ["title", "body"]);
+    return {
+      title: requireFlag(flags, "title"),
+      body: requireFlag(flags, "body"),
+      ...(flags.priority ? { priority: flags.priority } : {})
+    };
+  }
+
   if (op === "record") {
     const flags = parseFlags(argv, ["kind", "body", "confidence"], ["body"]);
     const confidence = flags.confidence ? Number(flags.confidence) : undefined;
@@ -246,12 +255,14 @@ usage: prim project <init|install> --repo <path> --github <owner/repo>`;
 function primitiveUsage(): string {
   return [
     "usage: prim observe <subject-type> <subject-id>",
+    "usage: prim issue <subject-type> <subject-id> --title <title> --body <body> [--priority <priority>]",
     "usage: prim claim <subject-type> <subject-id> --scope <scope>",
     "usage: prim record <subject-type> <subject-id> --kind <kind> --body <body>",
     "usage: prim link <subject-type> <subject-id> --type <type> (--id <id> | --url <url>)",
     "usage: prim complete <subject-type> <subject-id> --summary <summary>",
     "",
     "examples:",
+    "  prim issue issue 123 --title \"Add login\" --body \"Create a durable work item before linking GitHub\"",
     "  prim observe issue 123",
     "  prim claim repo_policy prim_dogfood/background-worker --scope implementation"
   ].join("\n");
