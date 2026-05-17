@@ -80,6 +80,14 @@ npm run mcp
 
 Runtime JSONL files are written under `data/` and ignored by git.
 
+Read projected ledger state:
+
+```bash
+npm exec -- prim subject issue 123
+npm exec -- prim status
+npm exec -- prim report --since today
+```
+
 ## Project Namespaces
 
 Prim is managed as a sidecar control layer. Target repositories keep their own

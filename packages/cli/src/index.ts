@@ -2,8 +2,17 @@ import { initProjectConfig, installProjectConfig } from "../../core/src/project-
 import type { InitProjectResult, InstallProjectResult } from "../../core/src/project-config";
 import { invokePrim } from "../../core/src/invoke";
 import { JsonlLedgerBackend } from "../../core/src/ledger-jsonl";
+import { projectSubjectState } from "../../core/src/projector";
 import { resolveRuntimeLedgerPath } from "../../core/src/project-config";
-import { PRIM_OPS, type ExternalRef, type PrimInvokeRequest, type PrimOp } from "../../core/src/types";
+import {
+  PRIM_OPS,
+  type ExternalRef,
+  type PrimEvent,
+  type PrimInvokeRequest,
+  type PrimOp,
+  type SubjectRef,
+  type SubjectState
+} from "../../core/src/types";
 
 interface ProjectInitArgs {
   repoPath?: string;
@@ -35,6 +44,46 @@ async function main(argv: string[]): Promise<void> {
     if (!result.accepted) {
       process.exitCode = 1;
     }
+    return;
+  }
+
+  if (group === "subject") {
+    const subject = parseSubjectArgs(command, rest);
+    const ledgerPath = await resolveRuntimeLedgerPath();
+    const ledger = new JsonlLedgerBackend(ledgerPath);
+    const events = await ledger.listEvents(subject);
+    writeJson({
+      ledger: ledgerPath,
+      state: projectSubjectState(subject, events)
+    });
+    return;
+  }
+
+  if (group === "status") {
+    const args = compactArgs([command, ...rest]);
+    if (args.length > 0) {
+      throw new Error(`unknown argument: ${args[0]}`);
+    }
+    const ledgerPath = await resolveRuntimeLedgerPath();
+    const ledger = new JsonlLedgerBackend(ledgerPath);
+    const events = await ledger.query({});
+    writeJson({
+      ledger: ledgerPath,
+      ...buildStatus(events)
+    });
+    return;
+  }
+
+  if (group === "report") {
+    const flags = parseFlags(compactArgs([command, ...rest]), ["since"]);
+    const since = parseSince(flags.since ?? "today");
+    const ledgerPath = await resolveRuntimeLedgerPath();
+    const ledger = new JsonlLedgerBackend(ledgerPath);
+    const events = await ledger.query({});
+    writeJson({
+      ledger: ledgerPath,
+      ...buildReport(events, since)
+    });
     return;
   }
 
@@ -85,6 +134,24 @@ async function main(argv: string[]): Promise<void> {
   }
 
   throw new Error(projectUsage());
+}
+
+function writeJson(value: unknown): void {
+  console.log(JSON.stringify(value, null, 2));
+}
+
+function parseSubjectArgs(
+  subjectType: string | undefined,
+  argv: string[]
+): SubjectRef {
+  const [subjectId, ...rest] = argv;
+  if (!subjectType || !subjectId) {
+    throw new Error("usage: prim subject <subject-type> <subject-id>");
+  }
+  if (rest.length > 0) {
+    throw new Error(`unknown argument: ${rest[0]}`);
+  }
+  return { type: subjectType, id: subjectId };
 }
 
 function parsePrimitiveArgs(
@@ -190,6 +257,139 @@ function parseProjectInitArgs(argv: string[]): ProjectInitArgs {
   return parsed;
 }
 
+interface SubjectSummary {
+  subject: SubjectRef;
+  status: SubjectState["status"];
+  title?: string;
+  priority?: string;
+  last_event_ts?: string;
+  claims: number;
+  open_questions: number;
+  links: number;
+}
+
+function buildStatus(events: PrimEvent[]) {
+  const summaries = summarizeSubjects(events);
+  return {
+    total_events: events.length,
+    active_subjects: summaries.filter((summary) => summary.status !== "complete"),
+    completed_subjects: summaries.filter((summary) => summary.status === "complete"),
+    last_event_ts: newestTimestamp(events)
+  };
+}
+
+function buildReport(events: PrimEvent[], since: Date) {
+  const sinceIso = since.toISOString();
+  const sinceEvents = events.filter((event) => event.ts >= sinceIso);
+  const summaries = summarizeSubjects(
+    events.filter((event) => hasSubjectEventSince(event.subject, sinceEvents))
+  );
+  const completedKeys = new Set(
+    sinceEvents
+      .filter((event) => event.op === "complete")
+      .map((event) => subjectKey(event.subject))
+  );
+
+  return {
+    since: sinceIso,
+    generated_at: new Date().toISOString(),
+    total_events: sinceEvents.length,
+    completed_work: summaries.filter((summary) =>
+      completedKeys.has(subjectKey(summary.subject))
+    ),
+    open_work: summaries.filter((summary) => summary.status !== "complete"),
+    decisions: sinceEvents
+      .filter((event) => event.op === "decide")
+      .map((event) => ({
+        ts: event.ts,
+        subject: event.subject,
+        decision: event.input.decision,
+        rationale: event.input.rationale
+      })),
+    test_evidence: sinceEvents
+      .filter(
+        (event) =>
+          event.op === "record" && event.input.kind === "test_evidence"
+      )
+      .map((event) => ({
+        ts: event.ts,
+        subject: event.subject,
+        body: event.input.body
+      }))
+  };
+}
+
+function summarizeSubjects(events: PrimEvent[]): SubjectSummary[] {
+  const groups = groupEventsBySubject(events);
+  return Array.from(groups.values())
+    .map(({ subject, events: subjectEvents }) => {
+      const state = projectSubjectState(subject, subjectEvents);
+      const lastEvent = subjectEvents
+        .slice()
+        .sort((a, b) => a.ts.localeCompare(b.ts))
+        .at(-1);
+      return {
+        subject,
+        status: state.status,
+        title: state.issue?.title,
+        priority: state.issue?.priority,
+        last_event_ts: lastEvent?.ts,
+        claims: state.claims.length,
+        open_questions: state.open_questions.length,
+        links: state.links.length
+      };
+    })
+    .sort((a, b) => (b.last_event_ts ?? "").localeCompare(a.last_event_ts ?? ""));
+}
+
+function groupEventsBySubject(events: PrimEvent[]): Map<
+  string,
+  { subject: SubjectRef; events: PrimEvent[] }
+> {
+  const groups = new Map<string, { subject: SubjectRef; events: PrimEvent[] }>();
+  for (const event of events) {
+    const key = subjectKey(event.subject);
+    const group = groups.get(key) ?? { subject: event.subject, events: [] };
+    group.events.push(event);
+    groups.set(key, group);
+  }
+  return groups;
+}
+
+function hasSubjectEventSince(
+  subject: SubjectRef,
+  sinceEvents: PrimEvent[]
+): boolean {
+  const key = subjectKey(subject);
+  return sinceEvents.some((event) => subjectKey(event.subject) === key);
+}
+
+function subjectKey(subject: SubjectRef): string {
+  return `${subject.type}:${subject.id}`;
+}
+
+function newestTimestamp(events: PrimEvent[]): string | undefined {
+  return events.map((event) => event.ts).sort().at(-1);
+}
+
+function parseSince(value: string): Date {
+  if (value === "today") {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`invalid --since value: ${value}`);
+  }
+  return parsed;
+}
+
+function compactArgs(argv: Array<string | undefined>): string[] {
+  return argv.filter((arg): arg is string => Boolean(arg));
+}
+
 function parseFlags(
   argv: string[],
   allowed: string[],
@@ -249,6 +449,9 @@ function isInstallResult(
 
 function projectUsage(): string {
   return `${primitiveUsage()}
+usage: prim subject <subject-type> <subject-id>
+usage: prim status
+usage: prim report --since <date-or-today>
 usage: prim project <init|install> --repo <path> --github <owner/repo>`;
 }
 
