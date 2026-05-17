@@ -51,6 +51,11 @@ export interface InstallProjectResult extends InitProjectResult {
   manifestWritten: boolean;
 }
 
+export interface RuntimeLedgerOptions {
+  project?: string;
+  repoPath?: string;
+}
+
 export function inferProjectName(repoPath: string): string {
   return basename(resolve(repoPath));
 }
@@ -160,9 +165,26 @@ export async function resolveProjectLedgerPath(
 
 export async function resolveRuntimeLedgerPath(
   rootDir = process.cwd(),
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
+  options: RuntimeLedgerOptions = {}
 ): Promise<string> {
   const root = resolve(rootDir);
+
+  if (options.project && options.repoPath) {
+    throw new Error("--project and --repo cannot be used together");
+  }
+
+  if (options.repoPath) {
+    return resolveRepoLedgerPath(options.repoPath);
+  }
+
+  if (options.project) {
+    const manifest = await readProjectManifestFromCwd(root);
+    return resolveProjectLedgerPath(
+      manifest ? resolve(manifest.prim_root) : root,
+      options.project
+    );
+  }
 
   if (env.PRIM_LEDGER_PATH) {
     return resolve(env.PRIM_LEDGER_PATH);
@@ -182,6 +204,15 @@ export async function resolveRuntimeLedgerPath(
   }
 
   return resolve(root, "data", "prim-events.jsonl");
+}
+
+export async function resolveRepoLedgerPath(repoPath: string): Promise<string> {
+  const repoRoot = resolve(repoPath);
+  const manifest = await readProjectManifestFromCwd(repoRoot);
+  if (!manifest) {
+    throw new Error(`Prim manifest not found: ${resolve(repoRoot, ".prim.json")}`);
+  }
+  return resolveManifestLedgerPath(manifest);
 }
 
 export async function readProjectManifestFromCwd(

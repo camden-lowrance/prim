@@ -88,6 +88,13 @@ npm exec -- prim status
 npm exec -- prim report --since today
 ```
 
+Ledger commands accept explicit selection when cwd is not enough:
+
+```bash
+npm exec -- prim --project rei-miner status
+npm exec -- prim --repo C:\Users\camde\Documents\GitHub\rei-miner status
+```
+
 ## Project Namespaces
 
 Prim is managed as a sidecar control layer. Target repositories keep their own
