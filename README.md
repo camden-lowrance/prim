@@ -83,6 +83,7 @@ Runtime JSONL files are written under `data/` and ignored by git.
 Read projected ledger state:
 
 ```bash
+npm exec -- prim issue 123 --title "Add login" --body "Create a durable work item before linking GitHub"
 npm exec -- prim subject issue 123
 npm exec -- prim status
 npm exec -- prim report --since today

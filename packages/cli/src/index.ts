@@ -208,8 +208,19 @@ function parsePrimitiveArgs(
   subjectType: string | undefined,
   argv: string[]
 ): PrimInvokeRequest {
-  const [subjectId, ...rest] = argv;
-  if (!subjectType || !subjectId) {
+  let resolvedSubjectType = subjectType;
+  let subjectId: string | undefined;
+  let rest: string[];
+
+  if (op === "issue" && subjectType && argv[0]?.startsWith("--")) {
+    resolvedSubjectType = "issue";
+    subjectId = subjectType;
+    rest = argv;
+  } else {
+    [subjectId, ...rest] = argv;
+  }
+
+  if (!resolvedSubjectType || !subjectId) {
     throw new Error(primitiveUsage());
   }
 
@@ -220,7 +231,7 @@ function parsePrimitiveArgs(
       kind: "agent"
     },
     subject: {
-      type: subjectType,
+      type: resolvedSubjectType,
       id: subjectId
     },
     input: parsePrimitiveInput(op, rest)
@@ -508,6 +519,7 @@ usage: prim project <init|install> --repo <path> --github <owner/repo>`;
 function primitiveUsage(): string {
   return [
     "usage: prim observe <subject-type> <subject-id>",
+    "usage: prim issue <id> --title <title> --body <body> [--priority <priority>]",
     "usage: prim issue <subject-type> <subject-id> --title <title> --body <body> [--priority <priority>]",
     "usage: prim claim <subject-type> <subject-id> --scope <scope>",
     "usage: prim record <subject-type> <subject-id> --kind <kind> --body <body>",
@@ -515,7 +527,8 @@ function primitiveUsage(): string {
     "usage: prim complete <subject-type> <subject-id> --summary <summary>",
     "",
     "examples:",
-    "  prim issue issue 123 --title \"Add login\" --body \"Create a durable work item before linking GitHub\"",
+    "  prim issue 123 --title \"Add login\" --body \"Create a durable work item before linking GitHub\"",
+    "  prim issue repo_policy cleanup --title \"Clean up policy\" --body \"Document non-issue work\"",
     "  prim observe issue 123",
     "  prim claim repo_policy prim_dogfood/background-worker --scope implementation"
   ].join("\n");
