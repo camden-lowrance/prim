@@ -61,17 +61,18 @@ server.registerTool(
       ...baseShape,
       title: z.string().min(1),
       body: z.string().min(1),
-      priority: z.string().min(1).optional()
+      priority: z.string().min(1).optional(),
+      source: externalRefSchema.optional()
     })
   },
-  async ({ actor, subject, title, body, priority }) =>
+  async ({ actor, subject, title, body, priority, source }) =>
     jsonResult(
       await invokePrim(
         {
           op: "issue",
           actor: actor ?? defaultActor("issue"),
           subject,
-          input: { title, body, priority }
+          input: { title, body, priority, source }
         },
         ledger
       )

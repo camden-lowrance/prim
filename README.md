@@ -10,6 +10,8 @@ It is coordination fidelity.
 
 Prim does not replace Jira, GitHub, Linear, Temporal, or your SDLC.
 It gives agents a machine-native state layer that synchronizes across them.
+External systems are sources and projections. Prim stores the agent ledger:
+what was claimed, what was decided, what evidence exists, and what changed.
 
 ## Shape
 
@@ -83,11 +85,16 @@ Runtime JSONL files are written under `data/` and ignored by git.
 Read projected ledger state:
 
 ```bash
-npm exec -- prim issue 123 --title "Add login" --body "Create a durable work item before linking GitHub"
+npm exec -- prim issue 123 --title "Add login" --body "Rehydrate this work from a prompt" --source-type prompt --source-id prompt-2026-05-17
+npm exec -- prim issue 456 --title "Fix auth" --body "Rehydrate from GitHub" --source-type github_issue --source-id owner/repo#456 --source-url https://github.com/owner/repo/issues/456
 npm exec -- prim subject issue 123
 npm exec -- prim status
 npm exec -- prim report --since today
 ```
+
+Use `prim issue` to document the ledger subject that agents coordinate around.
+Use `prim link` to attach GitHub PRs, issue URLs, documents, logs, or other
+external artifacts. Do not mirror every tracker field into Prim.
 
 Ledger commands accept explicit selection when cwd is not enough:
 

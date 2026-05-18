@@ -113,6 +113,7 @@ export interface IssueItem {
   title: string;
   body: string;
   priority?: string;
+  source?: ExternalRef;
 }
 
 export interface SubjectState {
