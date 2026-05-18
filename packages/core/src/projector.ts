@@ -44,6 +44,10 @@ export function projectSubjectState(
           priority:
             typeof event.input.priority === "string"
               ? event.input.priority
+              : undefined,
+          source:
+            typeof event.input.source === "object" && event.input.source !== null
+              ? (event.input.source as ExternalRef)
               : undefined
         };
         break;

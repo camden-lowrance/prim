@@ -252,11 +252,24 @@ function parsePrimitiveInput(op: PrimOp, argv: string[]): Record<string, unknown
   }
 
   if (op === "issue") {
-    const flags = parseFlags(argv, ["title", "body", "priority"], ["title", "body"]);
+    const flags = parseFlags(
+      argv,
+      [
+        "title",
+        "body",
+        "priority",
+        "source-type",
+        "source-id",
+        "source-url",
+        "source-title"
+      ],
+      ["title", "body", "source-title"]
+    );
     return {
       title: requireFlag(flags, "title"),
       body: requireFlag(flags, "body"),
-      ...(flags.priority ? { priority: flags.priority } : {})
+      ...(flags.priority ? { priority: flags.priority } : {}),
+      ...parseIssueSource(flags)
     };
   }
 
@@ -315,6 +328,36 @@ function parseProjectInitArgs(argv: string[]): ProjectInitArgs {
   }
 
   return parsed;
+}
+
+function parseIssueSource(
+  flags: Record<string, string>
+): { source?: ExternalRef } {
+  if (
+    !flags["source-type"] &&
+    !flags["source-id"] &&
+    !flags["source-url"] &&
+    !flags["source-title"]
+  ) {
+    return {};
+  }
+
+  if (!flags["source-type"]) {
+    throw new Error("missing --source-type");
+  }
+
+  if (!flags["source-id"] && !flags["source-url"]) {
+    throw new Error("source requires --source-id or --source-url");
+  }
+
+  return {
+    source: {
+      type: flags["source-type"],
+      ...(flags["source-id"] ? { id: flags["source-id"] } : {}),
+      ...(flags["source-url"] ? { url: flags["source-url"] } : {}),
+      ...(flags["source-title"] ? { title: flags["source-title"] } : {})
+    }
+  };
 }
 
 interface SubjectSummary {
@@ -519,16 +562,17 @@ usage: prim project <init|install> --repo <path> --github <owner/repo>`;
 function primitiveUsage(): string {
   return [
     "usage: prim observe <subject-type> <subject-id>",
-    "usage: prim issue <id> --title <title> --body <body> [--priority <priority>]",
-    "usage: prim issue <subject-type> <subject-id> --title <title> --body <body> [--priority <priority>]",
+    "usage: prim issue <id> --title <title> --body <body> [--priority <priority>] [--source-type <type> (--source-id <id> | --source-url <url>)]",
+    "usage: prim issue <subject-type> <subject-id> --title <title> --body <body> [--priority <priority>] [--source-type <type> (--source-id <id> | --source-url <url>)]",
     "usage: prim claim <subject-type> <subject-id> --scope <scope>",
     "usage: prim record <subject-type> <subject-id> --kind <kind> --body <body>",
     "usage: prim link <subject-type> <subject-id> --type <type> (--id <id> | --url <url>)",
     "usage: prim complete <subject-type> <subject-id> --summary <summary>",
     "",
     "examples:",
-    "  prim issue 123 --title \"Add login\" --body \"Create a durable work item before linking GitHub\"",
-    "  prim issue repo_policy cleanup --title \"Clean up policy\" --body \"Document non-issue work\"",
+    "  prim issue 123 --title \"Add login\" --body \"Rehydrate this from a prompt\" --source-type prompt --source-id prompt-2026-05-17",
+    "  prim issue 456 --title \"Fix auth\" --body \"Rehydrate from GitHub\" --source-type github_issue --source-id owner/repo#456 --source-url https://github.com/owner/repo/issues/456",
+    "  prim issue work cleanup --title \"Clean up policy\" --body \"Document non-tracker work\"",
     "  prim observe issue 123",
     "  prim claim repo_policy prim_dogfood/background-worker --scope implementation"
   ].join("\n");
