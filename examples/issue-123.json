@@ -1,0 +1,27 @@
+[
+  {
+    "op": "record",
+    "actor": { "id": "agent:thread-a", "kind": "agent" },
+    "subject": { "type": "issue", "id": "ISSUE-123" },
+    "input": {
+      "kind": "claim",
+      "body": "Root cause appears to be stale refresh-token cache invalidation.",
+      "confidence": 0.72
+    }
+  },
+  {
+    "op": "ask",
+    "actor": { "id": "agent:thread-a", "kind": "agent" },
+    "subject": { "type": "issue", "id": "ISSUE-123" },
+    "input": {
+      "question": "Should legacy refresh-token behavior be preserved for one release cycle?",
+      "blocking": true
+    }
+  },
+  {
+    "op": "observe",
+    "actor": { "id": "agent:thread-b", "kind": "agent" },
+    "subject": { "type": "issue", "id": "ISSUE-123" },
+    "input": {}
+  }
+]

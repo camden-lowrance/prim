@@ -1,0 +1,36 @@
+{
+  "name": "prim",
+  "version": "0.1.0",
+  "description": "The primitives your agent needs.",
+  "type": "module",
+  "private": true,
+  "main": "packages/cli/src/index.ts",
+  "bin": {
+    "prim": "packages/cli/bin/prim.mjs"
+  },
+  "scripts": {
+    "check": "tsc --noEmit && npm run check:docs",
+    "check:docs": "node --import tsx scripts/generate-cli-docs.ts --check",
+    "docs:cli": "node --import tsx scripts/generate-cli-docs.ts",
+    "prim": "node --import tsx packages/cli/src/index.ts",
+    "demo": "node --import tsx examples/fresh-thread-continuity.ts"
+  },
+  "keywords": [
+    "agents",
+    "coordination",
+    "cli",
+    "ledger"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^14.0.3",
+    "nanoid": "^5.1.11",
+    "tsx": "^4.22.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.8.0",
+    "typescript": "^6.0.3"
+  }
+}
