@@ -10,8 +10,9 @@ It is coordination fidelity.
 
 Prim does not replace Jira, GitHub, Linear, Temporal, or your SDLC.
 It gives agents a machine-native state layer that synchronizes across them.
-External systems are sources and projections. Prim stores the agent ledger:
-what was claimed, what was decided, what evidence exists, and what changed.
+External systems are stores, coordinators, and projections. Prim stores the
+agent ledger: what was claimed, what was decided, what evidence exists, and
+what changed.
 
 ## Shape
 
@@ -98,9 +99,11 @@ Use `prim link` to attach GitHub PRs, issue URLs, documents, logs, or other
 external artifacts. Do not mirror every tracker field into Prim.
 
 For external-workflow-backed work, each lifecycle part can have its own source
-of truth. Jira can own issue tracking while GitHub owns code and PRs. Deploy
-tools can own deploy state. Documents can own signoff. Prim records the agent
-ledger across those stores. Do not run `prim complete` until the configured
+of truth and its own coordinator. Jira can own issue tracking while GitHub owns
+code and PRs. Temporal can own durable waits and retries. Agent orchestration
+can own planner/executor loops. Deploy tools can own deploy state. Prim records
+the agent ledger across those systems. Coordinators use Prim actions; they do
+not change Prim actions. Do not run `prim complete` until the configured
 completion source is done. See `docs/lifecycle-overlays.md`.
 
 Ledger commands accept explicit selection when cwd is not enough:
@@ -145,7 +148,7 @@ npm run server
 
 ## Position
 
-Prim should integrate with Beads for durable agent memory, with Temporal for long-running effects, and with GitHub/Jira/Linear/deploy tools/documents as plugins and projections.
+Prim should integrate with Beads for durable agent memory, with Temporal and agent orchestration as lifecycle coordinators, and with GitHub/Jira/Linear/deploy tools/documents as plugins and projections.
 
 Prim should not become:
 

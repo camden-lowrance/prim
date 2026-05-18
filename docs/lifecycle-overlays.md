@@ -3,10 +3,11 @@
 Prim sits around existing workflows. It does not replace GitHub, Jira, Linear,
 deploy systems, review systems, scripts, documents, chat, or prompt-only work.
 
-The right framing is plugins, overlays, and projections.
+The right framing is plugins, overlays, coordinators, and projections.
 
 - Plugins connect Prim to external stores.
 - Overlays show the current lifecycle state across those stores.
+- Coordinators run lifecycle steps outside Prim.
 - Projections write useful Prim state back out to those stores.
 
 When another system owns a lifecycle part, that system remains the source of
@@ -31,6 +32,43 @@ Not every project needs every store. A lifecycle part can be missing, local, or
 owned by multiple systems. Example: Jira can own issue tracking while GitHub
 owns code, PRs, and CI.
 
+## Lifecycle Coordinators
+
+Stores hold lifecycle state. Coordinators run lifecycle work.
+
+Examples:
+
+```text
+Temporal                 durable waits, retries, schedules, reconciliation
+agent orchestration      planner/executor/reviewer loops, multi-agent runs
+CI                       test execution and status reporting
+deploy automation        rollout, preview, rollback, health checks
+queues and schedulers    background work, polling, deferred follow-up
+browser automation       logged-in checks, screenshots, human-review flows
+```
+
+Prim should not become these systems. Prim records what was started, claimed,
+blocked, linked, decided, verified, and completed. Coordinators can read Prim
+state, perform work, and write back records, links, and evidence.
+
+Coordinators do not change Prim actions. They use the same primitive vocabulary:
+
+```text
+observe
+issue
+record
+ask
+decide
+claim
+handoff
+link
+complete
+```
+
+Coordinator internals stay outside Prim. Prim only records ledger boundaries:
+claim taken, workflow started, artifact linked, blocker found, decision made,
+evidence produced, handoff made, or completion asserted.
+
 ## Normal Shape
 
 ```text
@@ -39,6 +77,7 @@ Create or observe the Prim subject
 prim claim <subject-type> <subject-id> --scope <scope>
 Link active lifecycle artifacts
 Record useful facts while working
+Start or observe coordinators as needed
 Project useful state back to external stores
 Wait for the configured completion source
 Record final evidence
@@ -109,6 +148,10 @@ the source system.
 GitHub, Jira, Linear, CI, deploy tools, documents, scripts, and chat keep their
 native primitives. Prim keeps the cross-lifecycle agent ledger.
 
+Coordinator plugins should expose actions such as start, observe, retry, cancel,
+or wait through their native systems. Prim should store the fact and evidence of
+those actions, not the coordinator's whole internal state.
+
 ## GitHub Example
 
 ```text
@@ -134,6 +177,8 @@ Jira owns the issue
 GitHub owns the code branch and PR
 GitHub Actions owns CI
 Vercel owns deploy preview
+Temporal owns a retrying reconciliation workflow
+An agent orchestrator owns a review loop
 Prim owns claim, links, findings, decisions, blockers, evidence, and handoff
 Jira done state is the completion source
 ```

@@ -71,8 +71,9 @@ Prim keeps the reusable part:
 
 Prim does not copy external workflows. GitHub, Jira, Linear, deploy systems,
 review systems, scripts, prompts, logs, and documents are lifecycle stores.
-Plugins read from them. Projections write useful state back to them. Overlays
-show the current cross-store state. Prim stores the agent ledger around that
-work.
+Temporal, CI, schedulers, deploy automation, browser automation, and agent
+orchestration are lifecycle coordinators. Plugins read from them. Projections
+write useful state back to them. Overlays show the current cross-system state.
+Prim stores the agent ledger around that work.
 
 FS Flow remains a full workflow authority for one environment. Prim is the small open primitive layer.

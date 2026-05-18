@@ -89,7 +89,8 @@ The subject is completed only after the configured completion source is done.
 ## Lifecycle Overlays
 
 Prim projects a cross-lifecycle view from the ledger plus linked external
-stores. A project can use different stores for different lifecycle parts:
+stores and coordinators. A project can use different stores for different
+lifecycle parts:
 
 - intake
 - planning
@@ -102,6 +103,15 @@ stores. A project can use different stores for different lifecycle parts:
 
 Plugins connect each store. Projections write useful Prim state back to those
 stores. Prim should not copy every field from those stores.
+
+Lifecycle coordinators execute work outside Prim. Examples include Temporal,
+agent orchestration, CI, deploy automation, queues, schedulers, and browser
+automation. Coordinators can read Prim state and write back records, links, and
+evidence. Prim should not copy their full internal state.
+
+Coordinators do not add new Prim actions. They interact with Prim through the
+same primitive vocabulary. Their internal actions stay native to the coordinator
+and are recorded in Prim only at ledger boundaries.
 
 ## Beads Path
 
@@ -127,7 +137,8 @@ Beads should be the durable agent memory backend. Prim should stay the primitive
 
 Temporal is not required for the MVP.
 
-Later, Prim can append semantic events and let Temporal execute durable side effects:
+Later, Prim can append semantic events and let Temporal execute durable side
+effects:
 
 - sync GitHub comments
 - wait for CI
@@ -135,7 +146,24 @@ Later, Prim can append semantic events and let Temporal execute durable side eff
 - run adapter reconciliation
 - schedule drift checks
 
-Prim should not become Temporal. Prim handles semantic state. Temporal handles durable execution.
+Prim should not become Temporal. Prim handles semantic state. Temporal handles
+durable execution.
+
+## Agent Orchestration Path
+
+Agent orchestration is also a lifecycle coordinator. It can decide which agents
+run, how they split work, and when they retry. Prim should not own those loops.
+
+Prim should provide the shared state surface for orchestrators:
+
+- current subject state
+- active claims
+- blockers
+- valid next operations
+- linked artifacts
+- evidence records
+
+The orchestrator performs work. Prim records the ledger.
 
 ## Open Questions
 
