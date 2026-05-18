@@ -69,8 +69,10 @@ Prim keeps the reusable part:
 - external systems are reconciled
 - fresh threads can continue without story reconstruction
 
-Prim does not copy external trackers. GitHub, Jira, Linear, prompts, logs, and
-documents are sources to rehydrate from or projections to write back to. Prim
-stores the agent ledger around that work.
+Prim does not copy external workflows. GitHub, Jira, Linear, deploy systems,
+review systems, scripts, prompts, logs, and documents are lifecycle stores.
+Plugins read from them. Projections write useful state back to them. Overlays
+show the current cross-store state. Prim stores the agent ledger around that
+work.
 
 FS Flow remains a full workflow authority for one environment. Prim is the small open primitive layer.

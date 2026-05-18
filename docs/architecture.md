@@ -78,12 +78,30 @@ Current rules are minimal:
 - completed subjects only allow `observe`, `record`, and `link`.
 
 `complete` is a semantic assertion by the actor. Core does not inspect GitHub,
-Jira, Linear, CI, or deploy state. Adapters and agents must check the external
-source of truth before calling `complete`.
+Jira, Linear, CI, deploy state, documents, scripts, or prompt context. Adapters
+and agents must check the configured completion source before calling
+`complete`.
 
-For GitHub-backed work, Prim stays in progress while the PR is merely open,
-green, or awaiting review. The subject is completed only after GitHub says the
-work is done, normally through a merge or closed issue.
+For external-workflow-backed work, Prim stays in progress while intermediate
+lifecycle steps are merely open, green, approved, running, or awaiting review.
+The subject is completed only after the configured completion source is done.
+
+## Lifecycle Overlays
+
+Prim projects a cross-lifecycle view from the ledger plus linked external
+stores. A project can use different stores for different lifecycle parts:
+
+- intake
+- planning
+- code
+- review
+- test
+- deploy
+- handoff
+- completion
+
+Plugins connect each store. Projections write useful Prim state back to those
+stores. Prim should not copy every field from those stores.
 
 ## Beads Path
 

@@ -48,7 +48,7 @@ This repo includes:
 - HTTP `POST /v1/invoke`
 - MCP stdio server with one tool per primitive
 - GitHub adapter stub
-- GitHub-backed workflow guidance in `docs/github-workflow.md`
+- lifecycle overlay guidance in `docs/lifecycle-overlays.md`
 - repeatable `AUTH-142` demo
 
 ## Run
@@ -97,10 +97,11 @@ Use `prim issue` to document the ledger subject that agents coordinate around.
 Use `prim link` to attach GitHub PRs, issue URLs, documents, logs, or other
 external artifacts. Do not mirror every tracker field into Prim.
 
-For GitHub-backed work, GitHub remains the source of truth for issue, PR, CI,
-review, and merge state. Prim records the agent ledger around that workflow.
-Do not run `prim complete` until the GitHub work is actually done, normally
-after the PR is merged or the issue is closed. See `docs/github-workflow.md`.
+For external-workflow-backed work, each lifecycle part can have its own source
+of truth. Jira can own issue tracking while GitHub owns code and PRs. Deploy
+tools can own deploy state. Documents can own signoff. Prim records the agent
+ledger across those stores. Do not run `prim complete` until the configured
+completion source is done. See `docs/lifecycle-overlays.md`.
 
 Ledger commands accept explicit selection when cwd is not enough:
 
@@ -144,7 +145,7 @@ npm run server
 
 ## Position
 
-Prim should integrate with Beads for durable agent memory, with Temporal for long-running effects, and with GitHub/Jira/Linear as projections.
+Prim should integrate with Beads for durable agent memory, with Temporal for long-running effects, and with GitHub/Jira/Linear/deploy tools/documents as plugins and projections.
 
 Prim should not become:
 
