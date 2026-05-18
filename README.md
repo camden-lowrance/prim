@@ -48,6 +48,7 @@ This repo includes:
 - HTTP `POST /v1/invoke`
 - MCP stdio server with one tool per primitive
 - GitHub adapter stub
+- GitHub-backed workflow guidance in `docs/github-workflow.md`
 - repeatable `AUTH-142` demo
 
 ## Run
@@ -95,6 +96,11 @@ npm exec -- prim report --since today
 Use `prim issue` to document the ledger subject that agents coordinate around.
 Use `prim link` to attach GitHub PRs, issue URLs, documents, logs, or other
 external artifacts. Do not mirror every tracker field into Prim.
+
+For GitHub-backed work, GitHub remains the source of truth for issue, PR, CI,
+review, and merge state. Prim records the agent ledger around that workflow.
+Do not run `prim complete` until the GitHub work is actually done, normally
+after the PR is merged or the issue is closed. See `docs/github-workflow.md`.
 
 Ledger commands accept explicit selection when cwd is not enough:
 

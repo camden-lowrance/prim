@@ -77,6 +77,14 @@ Current rules are minimal:
 - `complete` rejects while blocking questions remain.
 - completed subjects only allow `observe`, `record`, and `link`.
 
+`complete` is a semantic assertion by the actor. Core does not inspect GitHub,
+Jira, Linear, CI, or deploy state. Adapters and agents must check the external
+source of truth before calling `complete`.
+
+For GitHub-backed work, Prim stays in progress while the PR is merely open,
+green, or awaiting review. The subject is completed only after GitHub says the
+work is done, normally through a merge or closed issue.
+
 ## Beads Path
 
 Current backend:
@@ -121,4 +129,3 @@ Prim should not become Temporal. Prim handles semantic state. Temporal handles d
 - Should the first read-only dashboard be CLI-only or browser-based?
 - What drift checks belong in core versus adapters?
 - Should external systems ever write directly, or only through adapters?
-

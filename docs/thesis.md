@@ -69,5 +69,8 @@ Prim keeps the reusable part:
 - external systems are reconciled
 - fresh threads can continue without story reconstruction
 
-FS Flow remains a full workflow authority for one environment. Prim is the small open primitive layer.
+Prim does not copy external trackers. GitHub, Jira, Linear, prompts, logs, and
+documents are sources to rehydrate from or projections to write back to. Prim
+stores the agent ledger around that work.
 
+FS Flow remains a full workflow authority for one environment. Prim is the small open primitive layer.
