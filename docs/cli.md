@@ -26,7 +26,7 @@ Options:
   -h, --help                      display help for command
 
 Commands:
-  status                          Show open and completed work from the selected
+  status [options]                Show open and completed work from the selected
                                   ledger.
   report [options]                Show a compact activity report.
   subject <type> <id>             Show projected state for a subject.
@@ -54,7 +54,10 @@ Usage: prim status [options]
 Show open and completed work from the selected ledger.
 
 Options:
-  -h, --help  display help for command
+  --completed-limit <number>  max completed subjects to include (default: 0)
+  --stale-hours <number>      include stale active subjects at or above this age
+                              in hours
+  -h, --help                  display help for command
 ```
 
 ## prim report

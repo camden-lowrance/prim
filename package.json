@@ -1,9 +1,12 @@
 {
-  "name": "prim",
+  "name": "@camden-lowrance/prim",
   "version": "0.1.0",
   "description": "The primitives your agent needs.",
   "type": "module",
-  "private": true,
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "packages/cli/src/index.ts",
   "bin": {
     "prim": "packages/cli/bin/prim.mjs"

@@ -3,3 +3,4 @@ data/
 .prim.json
 .env
 dist/
+*.tgz

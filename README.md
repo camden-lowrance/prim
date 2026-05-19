@@ -53,6 +53,12 @@ npm link
 The demo runs real CLI commands and shows three fresh actors continuing from
 the same ledger.
 
+Run from npm with npx:
+
+```bash
+npx @camden-lowrance/prim@latest --help
+```
+
 From any git repo:
 
 ```bash

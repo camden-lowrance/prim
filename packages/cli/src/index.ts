@@ -35,13 +35,27 @@ program
 program
   .command("status")
   .description("Show open and completed work from the selected ledger.")
-  .action(run(async (command) => {
+  .option(
+    "--completed-limit <number>",
+    "max completed subjects to include",
+    parseNonNegativeInteger,
+    0
+  )
+  .option(
+    "--stale-hours <number>",
+    "include stale active subjects at or above this age in hours",
+    parseNonNegativeNumber
+  )
+  .action(run(async (options, command) => {
     const ledgerPath = await resolveCliLedgerPath(selection(command));
     const ledger = new JsonlLedgerBackend(ledgerPath);
     const events = await ledger.query({});
     writeJson({
       ledger: ledgerPath,
-      ...buildStatus(events)
+      ...buildStatus(events, {
+        completedLimit: options.completedLimit,
+        staleHours: options.staleHours
+      })
     });
   }));
 
@@ -386,6 +400,22 @@ function parseNumber(value: string): number {
   return parsed;
 }
 
+function parseNonNegativeInteger(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error("expected a non-negative integer");
+  }
+  return parsed;
+}
+
+function parseNonNegativeNumber(value: string): number {
+  const parsed = Number(value);
+  if (Number.isNaN(parsed) || parsed < 0) {
+    throw new Error("expected a non-negative number");
+  }
+  return parsed;
+}
+
 function writeProjectResult(
   command: string,
   result: InitProjectResult | InstallProjectResult
@@ -419,17 +449,51 @@ interface SubjectSummary {
   title?: string;
   priority?: string;
   last_event_ts?: string;
+  age_hours?: number;
   claims: number;
   open_questions: number;
   links: number;
 }
 
-function buildStatus(events: PrimEvent[]) {
-  const summaries = summarizeSubjects(events);
+interface StatusOptions {
+  completedLimit?: number;
+  staleHours?: number;
+}
+
+function buildStatus(events: PrimEvent[], options: StatusOptions = {}) {
+  const now = new Date();
+  const completedLimit = options.completedLimit ?? 0;
+  const summaries = summarizeSubjects(events, now);
+  const activeSubjects = summaries.filter((summary) => summary.status !== "complete");
+  const completedSubjects = summaries.filter(
+    (summary) => summary.status === "complete"
+  );
+  const boundedCompleted =
+    completedLimit > 0 ? completedSubjects.slice(0, completedLimit) : [];
+  const staleHours = options.staleHours;
+  const staleActiveSubjects =
+    staleHours === undefined
+      ? []
+      : activeSubjects.filter(
+          (summary) =>
+            summary.age_hours !== undefined && summary.age_hours >= staleHours
+        );
+
   return {
+    generated_at: now.toISOString(),
     total_events: events.length,
-    active_subjects: summaries.filter((summary) => summary.status !== "complete"),
-    completed_subjects: summaries.filter((summary) => summary.status === "complete"),
+    active_subjects_total: activeSubjects.length,
+    completed_subjects_total: completedSubjects.length,
+    completed_limit: completedLimit,
+    active_subjects: activeSubjects,
+    completed_subjects: boundedCompleted,
+    ...(staleHours === undefined
+      ? {}
+      : {
+          stale_hours: staleHours,
+          stale_active_subjects_total: staleActiveSubjects.length,
+          stale_active_subjects: staleActiveSubjects
+        }),
     last_event_ts: newestTimestamp(events)
   };
 }
@@ -438,13 +502,28 @@ function buildReport(events: PrimEvent[], since: Date) {
   const sinceIso = since.toISOString();
   const sinceEvents = events.filter((event) => event.ts >= sinceIso);
   const summaries = summarizeSubjects(
-    events.filter((event) => hasSubjectEventSince(event.subject, sinceEvents))
+    events.filter((event) => hasSubjectEventSince(event.subject, sinceEvents)),
+    new Date()
   );
   const completedKeys = new Set(
     sinceEvents
       .filter((event) => event.op === "complete")
       .map((event) => subjectKey(event.subject))
   );
+  const decisions = sinceEvents
+    .filter(
+      (event) =>
+        event.op === "decide" ||
+        (event.op === "record" && event.input.kind === "decision")
+    )
+    .map((event) => ({
+      ts: event.ts,
+      subject: event.subject,
+      decision: event.op === "decide" ? event.input.decision : event.input.body,
+      ...(event.op === "decide" && event.input.rationale
+        ? { rationale: event.input.rationale }
+        : {})
+    }));
 
   return {
     since: sinceIso,
@@ -454,14 +533,7 @@ function buildReport(events: PrimEvent[], since: Date) {
       completedKeys.has(subjectKey(summary.subject))
     ),
     open_work: summaries.filter((summary) => summary.status !== "complete"),
-    decisions: sinceEvents
-      .filter((event) => event.op === "decide")
-      .map((event) => ({
-        ts: event.ts,
-        subject: event.subject,
-        decision: event.input.decision,
-        rationale: event.input.rationale
-      })),
+    decisions,
     test_evidence: sinceEvents
       .filter(
         (event) =>
@@ -475,7 +547,7 @@ function buildReport(events: PrimEvent[], since: Date) {
   };
 }
 
-function summarizeSubjects(events: PrimEvent[]): SubjectSummary[] {
+function summarizeSubjects(events: PrimEvent[], now: Date): SubjectSummary[] {
   const groups = groupEventsBySubject(events);
   return Array.from(groups.values())
     .map(({ subject, events: subjectEvents }) => {
@@ -490,6 +562,7 @@ function summarizeSubjects(events: PrimEvent[]): SubjectSummary[] {
         title: state.issue?.title,
         priority: state.issue?.priority,
         last_event_ts: lastEvent?.ts,
+        age_hours: ageHours(lastEvent?.ts, now),
         claims: state.claims.length,
         open_questions: state.open_questions.length,
         links: state.links.length
@@ -526,6 +599,19 @@ function subjectKey(target: SubjectRef): string {
 
 function newestTimestamp(events: PrimEvent[]): string | undefined {
   return events.map((event) => event.ts).sort().at(-1);
+}
+
+function ageHours(ts: string | undefined, now: Date): number | undefined {
+  if (!ts) {
+    return undefined;
+  }
+  const eventDate = new Date(ts);
+  if (Number.isNaN(eventDate.getTime())) {
+    return undefined;
+  }
+  const delta = now.getTime() - eventDate.getTime();
+  const hours = delta / (1000 * 60 * 60);
+  return Math.round(hours * 10) / 10;
 }
 
 function parseSince(value: string): Date {
